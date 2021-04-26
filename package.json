@@ -2,7 +2,7 @@
   "name": "StarblastWikiBot",
   "version": "1.0.0",
   "description": "Wikibot",
-  "main": "bot.js",
+  "main": "index.js",
   "dependencies": {
     "node-fetch": "^2.6.1"
   },
