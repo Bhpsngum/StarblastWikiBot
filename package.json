@@ -4,11 +4,15 @@
   "description": "Wikibot",
   "main": "bot.js",
   "dependencies": {
-    "mwn": "^0.10.4",
     "node-fetch": "^2.6.1"
   },
+  "buildpacks": [
+    {
+      url: "https://github.com/illustrativemathematics/pandoc-buildpack.git"
+    }
+  ],
   "scripts": {
-    "start": "node bot.js",
+    "start": "node .",
     "postinstall": ""
   }
 }
