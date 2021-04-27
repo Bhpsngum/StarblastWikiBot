@@ -4,13 +4,9 @@
   "description": "Wikibot",
   "main": "index.js",
   "dependencies": {
-    "node-fetch": "^2.6.1"
+    "axios": "^0.21.1",
+    "nodemw": "^0.14.0"
   },
-  "buildpacks": [
-    {
-      "url": "https://github.com/illustrativemathematics/pandoc-buildpack.git"
-    }
-  ],
   "scripts": {
     "start": "node .",
     "postinstall": ""
