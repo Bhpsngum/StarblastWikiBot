@@ -1,25 +1,32 @@
-// This bot is still in development, remove the first 2 lines to test it
-ThrowAWackyErrorSoThatTheBotCantRun();
+// This bot is still in development, remove the first 3 lines to test it
+var process = require("./process.js");
 
 // packages declaration
 // var WikiAPI = require("wikiapi");
 var WikiAPI = require("nodemw");
+var Discord = require("discord.js");
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
+var bot;
 
-// declare and log the bot in
-// var bot = new WikiAPI("http://starblastio.fandom.com/api.php");
-var bot = new WikiAPI({
-  protocol: "https",
-  server: 'starblastio.fandom.com',
-  path: '',
-  debug: true,
-  username: "StarblastWikiBot",
-  password: process.env.password
+var client = new Discord.Client();
+// log the bot into Discord
+client.login(process.env.token);
+
+client.on('ready', function() {
+  // declare and log the bot in
+  console.log("Connected as "+client.user.tag);
+  bot = new WikiAPI({
+    protocol: "https",
+    server: 'starblastio.fandom.com',
+    path: '',
+    debug: false,
+    username: "StarblastWikiBot",
+    password: process.env.password
+  });
+  console.log("Logged in as "+bot.options.username+" in '"+bot.api.server+"'");
+  client.user.setActivity("Checking "+bot.api.server);
 });
-//console.log(bot);
-
-//bot.login("StarblastWikiBot", "qhgeoble0lboq7s5m394r2175l0a63us", function(){});
 
 // pandoc converter
 var pandoc = function (originalLang, targetLang, content) {
@@ -98,9 +105,3 @@ var checkUpdateModdingPage = function() {
   });
   setInterval(checkUpdateModdingPage, fetch_delay);
 }
-
-// keep the bot working
-//bot.listen(function(){}, { delay: '1h' });
-
-// Do all actions
-checkUpdateModdingPage();
