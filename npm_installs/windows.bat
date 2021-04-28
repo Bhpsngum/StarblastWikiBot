@@ -1,3 +1,2 @@
 cd ..
-npm outdated
-npm update
+npm install

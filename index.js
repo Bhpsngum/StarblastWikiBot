@@ -1,5 +1,5 @@
-// This bot is still in development, remove the first 3 lines to test it
-var process = require("./process.js");
+// enable the line below if you have the `process.js` file
+// var process = require("./process.js");
 
 // packages declaration
 // var WikiAPI = require("wikiapi");
