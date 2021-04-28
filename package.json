@@ -4,9 +4,9 @@
   "description": "Wikibot",
   "main": "index.js",
   "dependencies": {
+    "@lavgup/mediawiki.js": "^1.1.0",
     "axios": "^0.21.1",
-    "discord.js": "^12.5.3",
-    "nodemw": "^0.14.0"
+    "discord.js": "^12.5.3"
   },
   "scripts": {
     "start": "node .",

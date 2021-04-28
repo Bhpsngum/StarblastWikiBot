@@ -3,29 +3,28 @@
 
 // packages declaration
 // var WikiAPI = require("wikiapi");
-var WikiAPI = require("nodemw");
+var { MediaWikiJS } = require("@lavgup/mediawiki.js");
 var Discord = require("discord.js");
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
-var bot;
 
-var client = new Discord.Client();
+var bot = new MediaWikiJS({
+  url: 'https://starblastio.fandom.com/api.php'
+});
+var client = new Discord.Client({
+  partials: []
+});
+
 // log the bot into Discord
 client.login(process.env.token);
 
 client.on('ready', function() {
-  // declare and log the bot in
-  console.log("Connected as "+client.user.tag);
-  bot = new WikiAPI({
-    protocol: "https",
-    server: 'starblastio.fandom.com',
-    path: '',
-    debug: false,
-    username: "StarblastWikiBot",
-    password: process.env.password
+  console.log("Connected as "+client.user.tag+" in Discord");
+  // log the bot into wiki
+  bot.login('StarblastWikiBot@StarblastWikiBot', process.env.password).then(function(){
+    console.log("Logged in as "+bot.api.options.botUsername+" in StarblastioFandom");
   });
-  console.log("Logged in as "+bot.options.username+" in '"+bot.api.server+"'");
-  client.user.setActivity("Checking "+bot.api.server);
+  client.user.setActivity("Checking Wiki");
 });
 
 // pandoc converter
@@ -105,3 +104,22 @@ var checkUpdateModdingPage = function() {
   });
   setInterval(checkUpdateModdingPage, fetch_delay);
 }
+
+client.on("message", function(message) {
+  if (message.content.startsWith("wiki!")) {
+    message.content = message.content.replace("wiki!","");
+    let commands = message.content.trim().split(" ");
+    switch (commands[0].toLowerCase()) {
+      case "ping":
+        message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
+        break;
+      case "test":
+        bot.edit({
+          title: "User:Bhpsngum/Sandbox",
+          content: commands[1]||"",
+          summary: 'Bot test'
+        }).then(function(){message.channel.send("Done!")});
+        break;
+    }
+  }
+});
