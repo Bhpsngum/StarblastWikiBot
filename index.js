@@ -8,13 +8,16 @@ var Discord = require("discord.js");
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
 var page = "https://starblastio.fandom.com/wiki/";
+var ready = { status: false };
 var titles = {
   "log": "Special log",
   "edit": "Article edited",
   "new": "Article created",
-  "visualeditor": "Visual Editor"
+  "visualeditor": "Visual Editor",
+  "mw-blank": "Blanked page",
+  "categorize": "Category modified"
 }
-var logChannelID = "837523024181592065", logChannel, lastDate;
+var logChannelID = "837523024181592065", logChannel, lastDate, lastID;
 var bot = new MediaWikiJS({
   url: 'https://starblastio.fandom.com/api.php'
 });
@@ -36,18 +39,32 @@ client.on('ready', async function() {
   var messages = await logChannel.messages.fetch({ limit: 2 });
   messages = [...messages.values()];
   const lastMessage = messages[0].embeds;
-  if (!(lastMessage||[]).length) lastDate = new Date().toISOString();
-  else {
-    let embed = lastMessage[lastMessage.length - 1];
-    if ((embed||{}).timestamp) lastDate = new Date(embed.timestamp+1000).toISOString();
-    else lastDate = new Date().toISOString();
-  }
-  console.log("Fetched last timestamp: "+lastDate);
-  var startFetchRC = function () {
-    fetchRC(logChannel);
-    setInterval(startFetchRC, 5000);
-  }
-  startFetchRC();
+  (new Promise(function (resolve, reject) {
+    var needcheck = false;
+    if (!(lastMessage||[]).length) lastDate = new Date().toISOString();
+    else {
+      let embed = lastMessage[lastMessage.length - 1];
+      if ((embed||{}).timestamp) {
+        let rcID = parseInt((embed.footer.text.match(/\d+/)||[0])[0]);
+        needcheck = true;
+        lastDate = new Date(embed.timestamp).toISOString();
+        fetchRC(logChannel, null, null, function(item){
+          return item.rcid > rcID
+        }, function (){
+          lastDate = new Date(embed.timestamp+1000).toISOString();
+          resolve();
+        });
+      }
+      else lastDate = new Date().toISOString();
+    }
+    if (!needcheck) resolve();
+  })).then(function () {
+    console.log("Fetched last timestamp: "+lastDate);
+    var startFetchRC = function () {
+      fetchRC(logChannel, null, null, null, function(){setTimeout(startFetchRC, 5000)});
+    }
+    setTimeout(startFetchRC, 5000);
+  });
 });
 
 // pandoc converter
@@ -57,7 +74,7 @@ var pandoc = function (originalLang, targetLang, content) {
     if (requests.length == 0) reject(new Error("Malfunctioned input data"));
     else Promise.all(requests.map(i => axios.get("https://pandoc.org/cgi-bin/trypandoc?from="+originalLang+"&to="+targetLang+"&text="+encodeURIComponent(i)+"&standalone=0"))).then(function (values) {
       resolve(values.map(v => ((v||{}).data||{}).html || "").join(""));
-    }).catch(function(e){reject(new Error(e))})
+    }).catch(reject)
   });
 }
 
@@ -127,13 +144,10 @@ var checkUpdateModdingPage = function() {
   });
   setInterval(checkUpdateModdingPage, fetch_delay);
 }
-var fetchRC = function (channel, isManual, fetchDuration) {
+var fetchRC = function (channel, isManual, fetchDuration, criteria, callback) {
   let t = parseInt(fetchDuration), start;
   if (isNaN(t)) {
-    if (isManual) {
-      message.channel.send("Invalid duration. Please specify valid number of hours.");
-      return
-    }
+    if (isManual) return channel.send("Invalid duration. Please specify valid number of hours.");
     else start = lastDate;
   }
   else start = new Date(Date.now()-t*3600*1e3).toISOString();
@@ -146,14 +160,17 @@ var fetchRC = function (channel, isManual, fetchDuration) {
     rcdir: "newer",
     rclimit: bot.API_LIMIT
   }).then(async function (data) {
-    let rc = data.query.recentchanges;
+    let rc = data.query.recentchanges.filter(function(item) {
+      return typeof criteria == "function"?criteria(item):true
+    });
+    isManual && console.log(rc);
     if (!isManual && rc.length > 0) lastDate = new Date(Date.parse(rc[rc.length - 1].timestamp)+1000).toISOString();
     for (let info of rc) {
       let title = titles[info.type]||info.type;
       if (info.new) title = titles["new"];
       let difference = info.newlen - info.oldlen;
       let comment = info.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
-        return "["+page+encodeURIComponent(a)+" "+c+"]"
+        return "["+page+encodeURIComponent(a)+" "+(c||a)+"]"
       }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
         return "[" + page + encodeURIComponent(info.title) + "#" + encodeURIComponent(v) + " Section '" + v + "']"
       }).replace(/\[(.+?)\s(.+?)\]/g,"[$2]($1)");
@@ -163,17 +180,18 @@ var fetchRC = function (channel, isManual, fetchDuration) {
       .setFooter('ID #'+info.rcid)
       .setColor('#0099ff')
       .addFields(
-        {name: 'Page name and diffs', value: "["+info.title+"]("+page+(info.type=="log"?"Special:Log":(encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid))+")", inline: true},
-        {name: 'Author', value: "["+info.user+"]("+page+(info.user.match(/\d+\.\d+\.\d+\.\d+/)?"Special:Contributions/":"UserProfile:")+info.user+")", inline: true},
+        {name: 'Page name and diffs', value: "["+info.title+"]("+page+(info.type=="log"?"Special:Log":(encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid))+")"},
+        {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+info.user+")"},
         {name: 'Minor edit?', value: info.minor?"Yes":"No", inline: true},
         {name: 'Redirected?', value: info.redirect?"Yes":"No", inline: true},
-        {name: "Tags", value: info.tags.map(i => titles[i]||i).join(", ") || "None", inline: true},
-        {name: 'Comment', value: comment||"`None`"}
+        {name: "Tags", value: info.tags.map(i => titles[i]||i).join(", ") || "None", inline: true}
       );
-      if (info.type != "log") embed.addField("Bytes changed", info.oldlen + " --> " + info.newlen + " (" + (difference>0?"+":"") + difference + ")", true);
+      if (info.type != "log") embed.addField("Bytes changed", info.oldlen + " --> " + info.newlen + " (" + (difference>=0?"+":"") + difference + ")", true);
+      embed.addField('Comment', comment||"`None`");
       channel.send(embed);
     }
   });
+  typeof callback == "function" && callback();
 }
 client.on("message", function(message) {
   if (message.content.startsWith("w!")) {
@@ -190,7 +208,8 @@ client.on("message", function(message) {
       //     summary: 'Bot test'
       //   }).then(function(){message.channel.send("Done!")});
       //   break;
-      case "stats":
+      case "recentchanges":
+      case "rc":
         fetchRC(message.channel, true, commands[1]);
         break;
       case "break":
