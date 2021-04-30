@@ -7,7 +7,14 @@ var { MediaWikiJS } = require("@lavgup/mediawiki.js");
 var Discord = require("discord.js");
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
-
+var page = "https://starblastio.fandom.com/wiki/";
+var titles = {
+  "log": "Special log",
+  "edit": "Article edited",
+  "new": "Article created",
+  "visualeditor": "Visual Editor"
+}
+var logChannelID = "837523024181592065", logChannel, lastDate;
 var bot = new MediaWikiJS({
   url: 'https://starblastio.fandom.com/api.php'
 });
@@ -18,13 +25,29 @@ var client = new Discord.Client({
 // log the bot into Discord
 client.login(process.env.token);
 
-client.on('ready', function() {
+client.on('ready', async function() {
   console.log("Connected as "+client.user.tag+" in Discord");
   // log the bot into wiki
   bot.login('StarblastWikiBot@StarblastWikiBot', process.env.password).then(function(){
     console.log("Logged in as "+bot.api.options.botUsername+" in StarblastioFandom");
   });
   client.user.setActivity("Checking Wiki");
+  logChannel = client.channels.cache.get(logChannelID);
+  var messages = await logChannel.messages.fetch({ limit: 2 });
+  messages = [...messages.values()];
+  const lastMessage = messages[0].embeds;
+  if (!(lastMessage||[]).length) lastDate = new Date().toISOString();
+  else {
+    let embed = lastMessage[lastMessage.length - 1];
+    if ((embed||{}).timestamp) lastDate = new Date(embed.timestamp+1000).toISOString();
+    else lastDate = new Date().toISOString();
+  }
+  console.log("Fetched last timestamp: "+lastDate);
+  var startFetchRC = function () {
+    fetchRC(logChannel);
+    setInterval(startFetchRC, 5000);
+  }
+  startFetchRC();
 });
 
 // pandoc converter
@@ -104,22 +127,74 @@ var checkUpdateModdingPage = function() {
   });
   setInterval(checkUpdateModdingPage, fetch_delay);
 }
-
+var fetchRC = function (channel, isManual, fetchDuration) {
+  let t = parseInt(fetchDuration), start;
+  if (isNaN(t)) {
+    if (isManual) {
+      message.channel.send("Invalid duration. Please specify valid number of hours.");
+      return
+    }
+    else start = lastDate;
+  }
+  else start = new Date(Date.now()-t*3600*1e3).toISOString();
+  bot.api.get({
+    action: 'query',
+    list: 'recentchanges',
+    rcprop: 'title|timestamp|comment|user|flags|sizes|ids|redirect|tags',
+    rcend: new Date().toISOString(),
+    rcstart: start,
+    rcdir: "newer",
+    rclimit: bot.API_LIMIT
+  }).then(async function (data) {
+    let rc = data.query.recentchanges;
+    if (!isManual && rc.length > 0) lastDate = new Date(Date.parse(rc[rc.length - 1].timestamp)+1000).toISOString();
+    for (let info of rc) {
+      let title = titles[info.type]||info.type;
+      if (info.new) title = titles["new"];
+      let difference = info.newlen - info.oldlen;
+      let comment = info.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
+        return "["+page+encodeURIComponent(a)+" "+c+"]"
+      }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
+        return "[" + page + encodeURIComponent(info.title) + "#" + encodeURIComponent(v) + " Section '" + v + "']"
+      }).replace(/\[(.+?)\s(.+?)\]/g,"[$2]($1)");
+      var embed = new Discord.MessageEmbed()
+      .setTitle(title)
+      .setTimestamp(info.timestamp)
+      .setFooter('ID #'+info.rcid)
+      .setColor('#0099ff')
+      .addFields(
+        {name: 'Page name and diffs', value: "["+info.title+"]("+page+(info.type=="log"?"Special:Log":(encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid))+")", inline: true},
+        {name: 'Author', value: "["+info.user+"]("+page+(info.user.match(/\d+\.\d+\.\d+\.\d+/)?"Special:Contributions/":"UserProfile:")+info.user+")", inline: true},
+        {name: 'Minor edit?', value: info.minor?"Yes":"No", inline: true},
+        {name: 'Redirected?', value: info.redirect?"Yes":"No", inline: true},
+        {name: "Tags", value: info.tags.map(i => titles[i]||i).join(", ") || "None", inline: true},
+        {name: 'Comment', value: comment||"`None`"}
+      );
+      if (info.type != "log") embed.addField("Bytes changed", info.oldlen + " --> " + info.newlen + " (" + (difference>0?"+":"") + difference + ")", true);
+      channel.send(embed);
+    }
+  });
+}
 client.on("message", function(message) {
-  if (message.content.startsWith("wiki!")) {
-    message.content = message.content.replace("wiki!","");
+  if (message.content.startsWith("w!")) {
+    message.content = message.content.replace("w!","");
     let commands = message.content.trim().split(" ");
     switch (commands[0].toLowerCase()) {
       case "ping":
         message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
         break;
-      case "test":
-        bot.edit({
-          title: "User:Bhpsngum/Sandbox",
-          content: commands[1]||"",
-          summary: 'Bot test'
-        }).then(function(){message.channel.send("Done!")});
+      // case "test":
+      //   bot.edit({
+      //     title: "User:Bhpsngum/Sandbox",
+      //     content: commands[1]||"",
+      //     summary: 'Bot test'
+      //   }).then(function(){message.channel.send("Done!")});
+      //   break;
+      case "stats":
+        fetchRC(message.channel, true, commands[1]);
         break;
+      case "break":
+        bot.breakThisLmao();
     }
   }
 });
