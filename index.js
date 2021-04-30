@@ -181,7 +181,7 @@ var fetchRC = function (channel, isManual, fetchDuration, criteria, callback) {
       .setColor('#0099ff')
       .addFields(
         {name: 'Page name and diffs', value: "["+info.title+"]("+page+(info.type=="log"?"Special:Log":(encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid))+")"},
-        {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+info.user+")"},
+        {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+encodeURIComponent(info.user)+")"},
         {name: 'Minor edit?', value: info.minor?"Yes":"No", inline: true},
         {name: 'Redirected?', value: info.redirect?"Yes":"No", inline: true},
         {name: "Tags", value: info.tags.map(i => titles[i]||i).join(", ") || "None", inline: true}
@@ -190,6 +190,7 @@ var fetchRC = function (channel, isManual, fetchDuration, criteria, callback) {
       embed.addField('Comment', comment||"`None`");
       channel.send(embed);
     }
+    if (rc.length == 0 && isManual) channel.send("No logs found during the specified duration.");
   });
   typeof callback == "function" && callback();
 }
