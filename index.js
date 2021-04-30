@@ -9,13 +9,48 @@ var axios = require("axios");
 var fetch_delay = 86400; // in seconds
 var page = "https://starblastio.fandom.com/wiki/";
 var ready = { status: false };
-var titles = {
+var logtitles = {
   "log": "Special log",
   "edit": "Article edited",
   "new": "Article created",
-  "visualeditor": "Visual Editor",
-  "mw-blank": "Blanked page",
-  "categorize": "Category modified"
+  "categorize": "Category modified",
+  "visualeditor": "visual edit",
+  "mw-blank": "blanked page",
+  "mw-new-redirect": "new redirect",
+  "mw-rollback": "rollback",
+  "mw-undo": "undo",
+  "mw-removed-redirect": "redirect removed",
+}
+var eventTitles = {
+  "delete": "Page deleted",
+  "block": "User blocked",
+  "protect": "Page protection level changed",
+  "curseprofile": "User profile changed",
+  "move": "Page moved",
+  "rights": "User rights changed",
+  "upload": "File uploaded"
+}
+var eventPageTitles = {
+  "block": "Target user",
+  "curseprofile": "Target user",
+  "rights": "Target user",
+  "upload": "Target file",
+  "overwrite": "Target file"
+}
+var actionTitle = {
+  "move": "Move page",
+  "overwrite": "Overwrite file",
+  "delete": "Delete page",
+  "create": "Create page",
+  "upload": "Upload file",
+  "profile-edited": "Edit profile",
+  "comment-created": "Add comment",
+  "rights": "Change user rights",
+  "block": "Block user",
+  "unblock": "Unblock user",
+  "protect": "Protect page",
+  "unprotect": "Remove protection (allow all users)",
+  "modify": "Change protection level"
 }
 var logChannelID = "837523024181592065", logChannel, lastDate, lastID;
 var bot = new MediaWikiJS({
@@ -39,7 +74,7 @@ client.on('ready', async function() {
   var messages = await logChannel.messages.fetch({ limit: 2 });
   messages = [...messages.values()];
   const lastMessage = messages[0].embeds;
-  (new Promise(function (resolve, reject) {
+  (new Promise(async function (resolve, reject) {
     var needcheck = false;
     if (!(lastMessage||[]).length) lastDate = new Date().toISOString();
     else {
@@ -48,7 +83,7 @@ client.on('ready', async function() {
         let rcID = parseInt((embed.footer.text.match(/\d+/)||[0])[0]);
         needcheck = true;
         lastDate = new Date(embed.timestamp).toISOString();
-        fetchRC(logChannel, null, null, function(item){
+        await fetchRC(logChannel, null, null, function(item){
           return item.rcid > rcID
         }, function (){
           lastDate = new Date(embed.timestamp+1000).toISOString();
@@ -60,8 +95,8 @@ client.on('ready', async function() {
     if (!needcheck) resolve();
   })).then(function () {
     console.log("Fetched last timestamp: "+lastDate);
-    var startFetchRC = function () {
-      fetchRC(logChannel, null, null, null, function(){setTimeout(startFetchRC, 5000)});
+    var startFetchRC = async function () {
+      await fetchRC(logChannel, null, null, null, async function(){await setTimeout(startFetchRC, 5000)});
     }
     setTimeout(startFetchRC, 5000);
   });
@@ -144,7 +179,66 @@ var checkUpdateModdingPage = function() {
   });
   setInterval(checkUpdateModdingPage, fetch_delay);
 }
-var fetchRC = function (channel, isManual, fetchDuration, criteria, callback) {
+var logInfo = async function (channel, info) {
+  let title = logtitles[info.type]||info.type;
+  if (info.new) title = logtitles["new"];
+  let difference = info.newlen - info.oldlen;
+  let comment = info.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
+    return "["+page+encodeURIComponent(a)+" "+(c||a)+"]"
+  }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
+    return "[" + page + encodeURIComponent(info.title) + "#" + encodeURIComponent(v) + " Section '" + v + "']"
+  }).replace(/\[(.+?)\s(.+?)\]/g,"[$2]($1)");
+  var embed = new Discord.MessageEmbed()
+  .setTitle(title)
+  .setTimestamp(info.timestamp)
+  .setFooter('ID #'+info.rcid)
+  .setColor('#0099ff')
+  .addFields(
+    {name: 'Page name and diffs', value: "["+info.title+"]("+page+encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid+")"},
+    {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+encodeURIComponent(info.user)+")"},
+    {name: 'Minor edit?', value: info.minor?"Yes":"No", inline: true},
+    {name: 'Redirected?', value: info.redirect?"Yes":"No", inline: true},
+    {name: "Tags", value: info.tags.map(i => logtitles[i]||i).join(", ") || "None", inline: true},
+    {name: "Bytes changed", value: info.oldlen + " --> " + info.newlen + " (" + (difference>=0?"+":"") + difference + ")", inline: true},
+    {name: 'Comment', value: comment||"`None`"}
+  );
+  await channel.send(embed);
+}
+var logEvent = async function (channel, info) {
+  let logs = await bot.api.get({
+    action: 'query',
+    list: 'logevents',
+    leprop: 'type|title|timestamp|comment|user|ids|tags|details',
+    leend: info.timestamp,
+    lestart: info.timestamp,
+    ledir: "newer",
+    lelimit: "max"
+  });
+  let log = logs.query.logevents[0];
+  if (log) {
+    let title = "Log: " +eventTitles[log.type]||log.type;
+    let comment = log.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
+      return "["+page+encodeURIComponent(a)+" "+(c||a)+"]"
+    }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
+      return "[" + page + encodeURIComponent(info.title) + "#" + encodeURIComponent(v) + " Section '" + v + "']"
+    }).replace(/\[(.+?)\s(.+?)\]/g,"[$2]($1)");
+    var embed = new Discord.MessageEmbed()
+    .setTitle(title)
+    .setTimestamp(log.timestamp)
+    .setURL(page+"Special:Log/"+log.type)
+    .setFooter('ID #'+info.rcid+" (log ID #"+log.logid+")")
+    .setColor('#0099ff')
+    .addFields(
+      {name: eventPageTitles[log.type]||'Target page', value: "["+log.title+"]("+page+encodeURIComponent(log.title)+")", inline: true},
+      {name: 'Action', value: actionTitle[log.action]||log.action, inline: true},
+      {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+encodeURIComponent(info.user)+")"},
+      {name: "Tags", value: log.tags.map(i => eventTitles[i]||i).join(", ") || "None", inline: true},
+      {name: 'Comment', value: comment||"`None`"}
+    );
+    await channel.send(embed);
+  }
+}
+var fetchRC = async function (channel, isManual, fetchDuration, criteria, callback) {
   let t = parseInt(fetchDuration), start;
   if (isNaN(t)) {
     if (isManual) return channel.send("Invalid duration. Please specify valid number of hours.");
@@ -158,37 +252,16 @@ var fetchRC = function (channel, isManual, fetchDuration, criteria, callback) {
     rcend: new Date().toISOString(),
     rcstart: start,
     rcdir: "newer",
-    rclimit: bot.API_LIMIT
+    rclimit: "max"
   }).then(async function (data) {
     let rc = data.query.recentchanges.filter(function(item) {
       return typeof criteria == "function"?criteria(item):true
     });
-    isManual && console.log(rc);
+    //isManual && console.log(rc);
     if (!isManual && rc.length > 0) lastDate = new Date(Date.parse(rc[rc.length - 1].timestamp)+1000).toISOString();
     for (let info of rc) {
-      let title = titles[info.type]||info.type;
-      if (info.new) title = titles["new"];
-      let difference = info.newlen - info.oldlen;
-      let comment = info.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
-        return "["+page+encodeURIComponent(a)+" "+(c||a)+"]"
-      }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
-        return "[" + page + encodeURIComponent(info.title) + "#" + encodeURIComponent(v) + " Section '" + v + "']"
-      }).replace(/\[(.+?)\s(.+?)\]/g,"[$2]($1)");
-      var embed = new Discord.MessageEmbed()
-      .setTitle(title)
-      .setTimestamp(info.timestamp)
-      .setFooter('ID #'+info.rcid)
-      .setColor('#0099ff')
-      .addFields(
-        {name: 'Page name and diffs', value: "["+info.title+"]("+page+(info.type=="log"?"Special:Log":(encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid))+")"},
-        {name: 'Author', value: "["+(info.anon?"`[Anomynous]` ":"")+info.user+"]("+page+(info.anon?"Special:Contributions/":"UserProfile:")+encodeURIComponent(info.user)+")"},
-        {name: 'Minor edit?', value: info.minor?"Yes":"No", inline: true},
-        {name: 'Redirected?', value: info.redirect?"Yes":"No", inline: true},
-        {name: "Tags", value: info.tags.map(i => titles[i]||i).join(", ") || "None", inline: true}
-      );
-      if (info.type != "log") embed.addField("Bytes changed", info.oldlen + " --> " + info.newlen + " (" + (difference>=0?"+":"") + difference + ")", true);
-      embed.addField('Comment', comment||"`None`");
-      channel.send(embed);
+      if (info.type == "log") await logEvent(channel, info);
+      else await logInfo(channel, info);
     }
     if (rc.length == 0 && isManual) channel.send("No logs found during the specified duration.");
   });
