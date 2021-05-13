@@ -9,6 +9,24 @@ var axios = require("axios");
 var fetch_delay = 86400; // in seconds
 var page = "https://starblastio.fandom.com/wiki/";
 var ready = { status: false };
+var admins = [
+  {
+    discord_id: "454602208357384201",
+    wiki_username: "Bhpsngum",
+  },
+  {
+    discord_id: "442098944479199233",
+    wiki_username: "Starblastdestroy",
+  },
+  {
+    discord_id: "320394438402768896",
+    wiki_username: "Dpleshkov",
+  },
+  {
+    discord_id: "380861033784410112",
+    wiki_username: "Novawastakenagain",
+  }
+]
 var logtitles = {
   "log": "Special log",
   "edit": "Article edited",
@@ -114,7 +132,7 @@ var pandoc = function (originalLang, targetLang, content) {
 }
 
 // check for updates of the page "Modding Tutorial" from "pmgl/starblast-modding/README.md" daily
-var checkUpdateModdingPage = function() {
+var checkUpdateModdingPage = function(user, message) {
   axios.get("https://raw.githubusercontent.com/pmgl/starblast-modding/master/README.md").then(function(data) {
     let text = data.data, req = [];
     while (text.length > 0) {
@@ -172,12 +190,14 @@ var checkUpdateModdingPage = function() {
       // remove the title
       res = res.replace("= Starblast Modding =\n", "")
       // edit the page
-      bot.edit("Modding Tutorial", res, 'Testing deployment StarblastWikiBot: Update Modding Page from origin', { bot: 1, nocreate: 1, minor: 1 }, function(){});
-      //await bot.edit_page('Modding_Tutorial', res, { bot: 1, nocreate: 1, minor: 1, summary: 'First Testing deploy of the StarblastWikiBot: Update Modding Page from origin' });
+      bot.edit({
+        title: 'Modding Tutorial',
+        content: res,
+        summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by [[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]"
+      }).then(e => message.channel.send("Action successfully performed.")).catch(e => message.channel.send("Action failed to perfom."));
 
     }).catch(console.log);
   });
-  setInterval(checkUpdateModdingPage, fetch_delay);
 }
 var logInfo = async function (channel, info) {
   let title = logtitles[info.type]||info.type;
@@ -286,8 +306,13 @@ client.on("message", function(message) {
       case "rc":
         fetchRC(message.channel, true, commands[1]);
         break;
+      case "updateModding":
+        let t = admins.map(i => i.discord_id).indexOf(message.author.id);
+        if (t != -1) checkUpdateModdingPage(t, message);
+        break;
       case "break":
-        bot.breakThisLmao();
+        let t = admins.map(i => i.discord_id).indexOf(message.author.id);
+        if (t != -1) bot.breakThisLmao();
     }
   }
 });
