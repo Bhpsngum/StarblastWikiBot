@@ -149,7 +149,6 @@ var checkUpdateModdingPage = function(user, message) {
     }
     Promise.all(req.map(r => pandoc("markdown", "mediawiki", r))).then(async function(values){
       let res = values.map(i => i + "\n").join("").trim();
-
       // replace all external images with local Fandom ones
       let ModdingInterfaceText;
       res = res.replace(/\[File\:\s*([^\|]+?)\|(.+\|)*(.+?)\]/g, function (Aqua, url, Kazuma, desc) {
@@ -189,13 +188,17 @@ var checkUpdateModdingPage = function(user, message) {
 
       // remove the title
       res = res.replace("= Starblast Modding =\n", "")
+
+      // append update info
+      let userprofile = '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]";
+      res += "\n == Update Status ==\n This page was updated on "+new Date().toGMTString()+", requested by "+userprofile;
+
       // edit the page
       bot.edit({
         title: 'Modding Tutorial',
         content: res,
-        summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by [[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]"
-      }).then(e => message.channel.send("Action successfully performed.")).catch(e => message.channel.send("Action failed to perfom."));
-
+        summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by '+userprofile;
+      }).then(e => message.reply("Action successfully performed.")).catch(e => message.reply("Action failed to perfom."));
     }).catch(console.log);
   });
 }
@@ -295,24 +298,19 @@ client.on("message", function(message) {
       case "ping":
         message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
         break;
-      // case "test":
-      //   bot.edit({
-      //     title: "User:Bhpsngum/Sandbox",
-      //     content: commands[1]||"",
-      //     summary: 'Bot test'
-      //   }).then(function(){message.channel.send("Done!")});
-      //   break;
       case "recentchanges":
       case "rc":
         fetchRC(message.channel, true, commands[1]);
         break;
-      case "updateModding":
-        let t = admins.map(i => i.discord_id).indexOf(message.author.id);
-        if (t != -1) checkUpdateModdingPage(t, message);
+      case "updatemodding":
+        let tx = admins.map(i => i.discord_id).indexOf(message.author.id);
+        if (tx != -1) checkUpdateModdingPage(tx, message);
+        else message.reply("You are not a wiki admin.")
         break;
       case "break":
         let t = admins.map(i => i.discord_id).indexOf(message.author.id);
         if (t != -1) bot.breakThisLmao();
+        break;
     }
   }
 });
