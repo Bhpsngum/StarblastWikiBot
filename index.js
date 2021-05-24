@@ -191,7 +191,7 @@ var checkUpdateModdingPage = function(user, message) {
 
       // append update info
       let userprofile = '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]";
-      res += "\n == Update Status ==\n This page was updated on "+new Date().toGMTString()+", requested by "+userprofile;
+      res += "\n== Update Status ==\nThis page was updated on "+new Date().toGMTString()+", requested by "+userprofile;
 
       // edit the page
       bot.edit({
