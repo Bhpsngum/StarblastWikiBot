@@ -197,7 +197,7 @@ var checkUpdateModdingPage = function(user, message) {
       bot.edit({
         title: 'Modding Tutorial',
         content: res,
-        summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by '+userprofile;
+        summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by '+userprofile
       }).then(e => message.reply("Action successfully performed.")).catch(e => message.reply("Action failed to perfom."));
     }).catch(console.log);
   });
