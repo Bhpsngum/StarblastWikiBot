@@ -183,15 +183,31 @@ var checkUpdateModdingPage = function(user, message) {
         return "[["+result+"]]";
       });
 
+      // Edit all in-page links (sections)
+
+      res = res.replace(/\[\[\#(.+?)(\|.+?)*\]\]/g, function (Aqua, section, notes) {
+        switch (section) {
+          default:
+            let t =  section[0];
+            section = section.slice(1,section.length);
+            section = t.toUpperCase() + section.replace(/-/g,"_");
+        }
+        return "[[#" + section + (notes || "") + "]]";
+      });
+
       // replace all “ with " because JS doesn't accept the former
       res = res.replace(/“/g, '"');
 
       // remove the title
-      res = res.replace("= Starblast Modding =\n", "")
+      res = res.replace("= Starblast Modding =\n", "");
+
+      // replace wiki version with GitHub version
+
+      res = res.replace(/\[\[Modding\sTutorial\|Gamepedia\/Fandom\sversion\]\]/, "[https://github.com/pmgl/starblast-modding GitHub version]");
 
       // append update info
       let userprofile = '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]";
-      res += "\n== Update Status ==\nThis page was updated on "+new Date().toGMTString()+", requested by "+userprofile;
+      res += "\n== Update Status ==\nThis page was updated on "+new Date().toGMTString()+" from [https://github.com/pmgl/starblast-modding/ the origin], requested by "+userprofile;
 
       // edit the page
       bot.edit({
