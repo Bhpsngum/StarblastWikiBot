@@ -86,6 +86,9 @@ client.on('ready', async function() {
   // log the bot into wiki
   bot.login('StarblastWikiBot@StarblastWikiBot', process.env.password).then(function(){
     console.log("Logged in as "+bot.api.options.botUsername+" in StarblastioFandom");
+  }).catch(e=>{
+    console.log("Login failed.");
+    stop();
   });
   client.user.setActivity("Checking Wiki");
   logChannel = client.channels.cache.get(logChannelID);
