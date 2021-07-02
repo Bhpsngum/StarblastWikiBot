@@ -4,7 +4,7 @@
   "description": "Wikibot",
   "main": "index.js",
   "dependencies": {
-    "@lavgup/mediawiki.js": "^1.1.0",
+    "@lavgup/mediawiki.js": "^1.2.1",
     "axios": "^0.21.1",
     "discord.js": "^12.5.3"
   },
