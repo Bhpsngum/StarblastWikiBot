@@ -329,7 +329,7 @@ client.on("message", function(message) {
   if (message.content.startsWith("w!")) {
     message.content = message.content.replace("w!","");
     let commands = message.content.trim().split(" ");
-    let command = commands.splice(0,1).toLowerCase();
+    let command = (commands.splice(0,1)[0]||"").toLowerCase();
     switch (command) {
       case "ping":
         message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
