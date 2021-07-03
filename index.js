@@ -343,7 +343,7 @@ client.on("message", function(message) {
         if (t != -1) bot.breakThisLmao();
         break;
     }
-    let tx = admins.map(i => i.discord_id).indexOf(message.author.id);
+    let tx = admins.map(i => i.discord_id).indexOf(message.author.id), ignore;
     if (tx != -1) switch(command) {
       case "updatemoddingpage":
         checkUpdateModdingPage(tx, message);
@@ -351,7 +351,10 @@ client.on("message", function(message) {
       case "delete":
         deletePage(commands, tx, message);
         break;
+      default:
+        ignore = 1;
+        break;
     }
-    else message.reply("You are not a wiki admin.")
+    else !ignore && message.reply("You are not a wiki admin.")
   }
 });
