@@ -310,7 +310,7 @@ var fetchRC = async function (channel, isManual, fetchDuration, criteria, callba
 var deletePage = function (params, user, message) {
   let name = params.shift();
   if (!name) {
-    message.reply("Plese use with this syntax: `w!delete <article name> <reason (optional)>`");
+    message.reply("Please use with this syntax: `w!delete <article name> <reason (optional)>`");
     return;
   }
   let reason = params.join(" ");
@@ -322,14 +322,14 @@ var deletePage = function (params, user, message) {
 }
 
 var handleAction = function(promise, message) {
-  promise.then(e => message.reply("Action successfully performed.")).catch(e => message.reply("Action failed to perfom."))
+  promise.then(e => message.reply("Action successfully performed.")).catch(e => {message.reply("Action failed to perfom.");console.log(e)})
 }
 
 client.on("message", function(message) {
   if (message.content.startsWith("w!")) {
     message.content = message.content.replace("w!","");
     let commands = message.content.trim().split(" ");
-    let command = (commands.splice(0,1)[0]||"").toLowerCase();
+    let command = (commands.shift()||"").toLowerCase();
     switch (command) {
       case "ping":
         message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
