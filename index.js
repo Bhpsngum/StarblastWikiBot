@@ -329,13 +329,14 @@ client.on("message", function(message) {
   if (message.content.startsWith("w!")) {
     message.content = message.content.replace("w!","");
     let commands = message.content.trim().split(" ");
-    switch (commands[0].toLowerCase()) {
+    let command = commands.splice(0,1).toLowerCase();
+    switch (command) {
       case "ping":
         message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
         break;
       case "recentchanges":
       case "rc":
-        fetchRC(message.channel, true, commands[1]);
+        fetchRC(message.channel, true, commands[0]);
         break;
       case "break":
         let t = admins.map(i => i.discord_id).indexOf(message.author.id);
@@ -343,12 +344,12 @@ client.on("message", function(message) {
         break;
     }
     let tx = admins.map(i => i.discord_id).indexOf(message.author.id);
-    if (tx != -1) switch(commands[0].toLowerCase()) {
+    if (tx != -1) switch(command) {
       case "updatemoddingpage":
         checkUpdateModdingPage(tx, message);
         break;
       case "delete":
-        deletePage(commands.splice(1,commands.length), tx, message);
+        deletePage(commands, tx, message);
         break;
     }
     else message.reply("You are not a wiki admin.")
