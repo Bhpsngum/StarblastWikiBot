@@ -210,11 +210,11 @@ var checkUpdateModdingPage = function(user, message) {
       res += "\n== Update Status ==\nThis page was updated on "+new Date().toGMTString()+" from [https://github.com/pmgl/starblast-modding/ the origin], requested by "+userprofile;
 
       // edit the page
-      bot.edit({
+      handleAction(bot.edit({
         title: 'Modding Tutorial',
         content: res,
         summary: 'Update Modding page from [https://github.com/pmgl/starblast-modding/ origin], requested by '+userprofile
-      }).then(e => message.reply("Action successfully performed.")).catch(e => message.reply("Action failed to perfom."));
+      }), message);
     }).catch(console.log);
   });
 }
@@ -306,6 +306,25 @@ var fetchRC = async function (channel, isManual, fetchDuration, criteria, callba
   });
   typeof callback == "function" && callback();
 }
+
+var deletePage = function (params, user, message) {
+  let name = params.shift();
+  if (!name) {
+    message.reply("Plese use with this syntax: `w!delete <article name> <reason (optional)>`");
+    return;
+  }
+  let reason = params.join(" ");
+  reason = "Delete action requested by " + '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]." + (reason?"Reason: ":"No specific reasons provided") + reason;
+  handleAction(bot.delete({
+    title: name,
+    reason: reason
+  }), message);
+}
+
+var handleAction = function(promise, message) {
+  promise.then(e => message.reply("Action successfully performed.")).catch(e => message.reply("Action failed to perfom."))
+}
+
 client.on("message", function(message) {
   if (message.content.startsWith("w!")) {
     message.content = message.content.replace("w!","");
@@ -318,15 +337,20 @@ client.on("message", function(message) {
       case "rc":
         fetchRC(message.channel, true, commands[1]);
         break;
-      case "updatemodding":
-        let tx = admins.map(i => i.discord_id).indexOf(message.author.id);
-        if (tx != -1) checkUpdateModdingPage(tx, message);
-        else message.reply("You are not a wiki admin.")
-        break;
       case "break":
         let t = admins.map(i => i.discord_id).indexOf(message.author.id);
         if (t != -1) bot.breakThisLmao();
         break;
     }
+    let tx = admins.map(i => i.discord_id).indexOf(message.author.id);
+    if (tx != -1) switch(commands[0].toLowerCase()) {
+      case "updatemoddingpage":
+        checkUpdateModdingPage(tx, message);
+        break;
+      case "delete":
+        deletePage(commands.splice(1,commands.length), tx, message);
+        break;
+    }
+    else message.reply("You are not a wiki admin.")
   }
 });
