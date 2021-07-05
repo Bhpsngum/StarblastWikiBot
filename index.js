@@ -314,7 +314,7 @@ var deletePage = function (params, user, message) {
     return;
   }
   let reason = params.join(" ");
-  reason = "Delete action requested by " + '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]." + (reason?"Reason: ":"No specific reasons provided") + reason;
+  reason = "Delete action requested by " + '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]. " + (reason?"Reason: ":"No specific reasons provided.") + reason;
   handleAction(bot.delete({
     title: name,
     reason: reason
