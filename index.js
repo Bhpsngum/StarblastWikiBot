@@ -40,7 +40,7 @@ var logtitles = {
   "mw-removed-redirect": "redirect removed",
 }
 var eventTitles = {
-  "delete": "Page deleted",
+  "delete": "Page deleted/undeleted",
   "block": "User blocked",
   "protect": "Page protection level changed",
   "curseprofile": "User profile changed",
@@ -59,6 +59,7 @@ var actionTitle = {
   "move": "Move page",
   "overwrite": "Overwrite file",
   "delete": "Delete page",
+  "restore": "Restore page"
   "create": "Create page",
   "upload": "Upload file",
   "profile-edited": "Edit profile",
