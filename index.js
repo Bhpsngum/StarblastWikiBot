@@ -311,7 +311,7 @@ var fetchRC = async function (channel, isManual, fetchDuration, criteria, callba
 var deletePage = function (params, user, message) {
   let name = params.shift();
   if (!name) {
-    message.reply("Please use with this syntax: `w!delete <article_name> <reason (optional)>` (use `_` instead of a space in article name)\nExample:`w!delete Starblastio_Wiki Spam`");
+    message.reply("\nPlease use with this syntax: `w!delete <article_name> <reason (optional)>`\n(use `_` instead of a space in article name)\nExample: `w!delete Starblastio_Wiki Spam`");
     return;
   }
   let reason = params.join(" ");
