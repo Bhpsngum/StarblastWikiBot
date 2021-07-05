@@ -59,7 +59,7 @@ var actionTitle = {
   "move": "Move page",
   "overwrite": "Overwrite file",
   "delete": "Delete page",
-  "restore": "Restore page"
+  "restore": "Restore page",
   "create": "Create page",
   "upload": "Upload file",
   "profile-edited": "Edit profile",
