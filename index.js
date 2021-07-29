@@ -1,5 +1,5 @@
 // enable the line below if you have the `process.js` file
-var process = require("./process.js");
+// var process = require("./process.js");
 
 // packages declaration
 // var WikiAPI = require("wikiapi");
@@ -192,7 +192,7 @@ var checkUpdateModdingPage = function(user, message) {
       res = res.replace(/\n\{\|\n/g, '\n{| class = "wikitable" width = "100%"\n');
 
       // replace all gamepedia external links with native direct links
-      res = res.replace(/\[https\:\/\/starblastio\.(fandom|gamepedia)\.com\/(wiki\/)*(.+?)\s(.+?)\]/g, function (Amane, Yashiro, Tsukasa, pageName, text) {
+      res = res.replace(/\[https\:\/\/starblast(io){0,1}\.(fandom|gamepedia)\.com\/(wiki\/){0,1}(.+?)\s(.+?)\]/g, function (Amane, Yashiro, Tsukasa, Aoi, pageName, text) {
         pageName = pageName.replace(/_/g, " ");
         let result = (pageName == text)?pageName:(pageName+"|"+text);
         return "[["+result+"]]";
@@ -220,11 +220,8 @@ var checkUpdateModdingPage = function(user, message) {
 
       res = res.replace(/\[\[Modding\sTutorial\|Gamepedia\/Fandom\sversion\]\]/, "[https://github.com/pmgl/starblast-modding GitHub version]");
 
-      // append update info
-      let userprofile = '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]";
-      res += "\n== Update Status ==\nThis page was updated on "+new Date().toGMTString()+" from [https://github.com/pmgl/starblast-modding/ the origin], requested by "+userprofile;
-
       // edit the page
+      let userprofile = '[[UserProfile:'+ admins[user].wiki_username + "|" + admins[user].wiki_username + "]]";
       handleAction(bot.edit({
         title: 'Modding Tutorial',
         content: res,
