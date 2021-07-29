@@ -16,7 +16,7 @@ const { window } = new JSDOM(``, {
 const $ = require( "jquery" )( window );
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
-var page = "https://starblastio.fandom.com/wiki/";
+var page = "https://starblast.fandom.com/wiki/";
 var ready = { status: false };
 var admins = [
   {
@@ -82,7 +82,7 @@ var actionTitle = {
 }
 var logChannelID = "837523024181592065", logChannel, lastDate, lastID;
 var bot = new MediaWikiJS({
-  url: 'https://starblastio.fandom.com/api.php'
+  url: 'https://starblast.fandom.com/api.php'
 });
 var client = new Discord.Client({
   partials: []
@@ -191,7 +191,7 @@ var checkUpdateModdingPage = function(user, message) {
       // set table to WikiTable with width 100%
       res = res.replace(/\n\{\|\n/g, '\n{| class = "wikitable" width = "100%"\n');
 
-      // replace all gamepedia external links with native direct links
+      // replace all gamepedia/fandom external links with native direct links
       res = res.replace(/\[https\:\/\/starblast(io){0,1}\.(fandom|gamepedia)\.com\/(wiki\/){0,1}(.+?)\s(.+?)\]/g, function (Amane, Yashiro, Tsukasa, Aoi, pageName, text) {
         pageName = pageName.replace(/_/g, " ");
         let result = (pageName == text)?pageName:(pageName+"|"+text);
