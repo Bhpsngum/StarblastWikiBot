@@ -1,10 +1,19 @@
 // enable the line below if you have the `process.js` file
-// var process = require("./process.js");
+var process = require("./process.js");
 
 // packages declaration
 // var WikiAPI = require("wikiapi");
 var { MediaWikiJS } = require("@lavgup/mediawiki.js");
 var Discord = require("discord.js");
+const { JSDOM } = require( "jsdom" );
+const { window } = new JSDOM(``, {
+  url: "https://pandoc.org/",
+  referrer: "https://pandoc.org/",
+  contentType: "text/html",
+  includeNodeLocations: true,
+  storageQuota: 10000000
+});
+const $ = require( "jquery" )( window );
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
 var page = "https://starblastio.fandom.com/wiki/";
@@ -124,10 +133,15 @@ client.on('ready', async function() {
 // pandoc converter
 var pandoc = function (originalLang, targetLang, content) {
   return new Promise(function(resolve, reject) {
-    let requests = ((content||"").match(/[^]{1,4000}/g) || []).filter(i => i);
+    let requests = ((content||"").match(/[^]{1,5000}/g) || []).filter(i => i);
     if (requests.length == 0) reject(new Error("Malfunctioned input data"));
-    else Promise.all(requests.map(i => axios.get("https://pandoc.org/cgi-bin/trypandoc?from="+originalLang+"&to="+targetLang+"&text="+encodeURIComponent(i)+"&standalone=0"))).then(function (values) {
-      resolve(values.map(v => ((v||{}).data||{}).html || "").join(""));
+    else Promise.all(requests.map(i => $.getJSON("/cgi-bin/trypandoc", {
+      from: originalLang,
+      to: targetLang,
+      text: i,
+      standalone: 0
+    }))).then(function (values) {
+      resolve(values.map(v => (v||{}).html || "").join(""));
     }).catch(reject)
   });
 }
@@ -148,7 +162,7 @@ var checkUpdateModdingPage = function(user, message) {
         text = "";
       }
     }
-    Promise.all(req.map(r => pandoc("markdown", "mediawiki", r))).then(async function(values){
+    Promise.all(req.map(r => pandoc("gfm", "mediawiki", r))).then(async function(values){
       let res = values.map(i => i + "\n").join("").trim();
       // replace all external images with local Fandom ones
       let ModdingInterfaceText;
