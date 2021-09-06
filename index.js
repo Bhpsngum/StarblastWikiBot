@@ -40,7 +40,6 @@ var logtitles = {
   "log": "Special log",
   "edit": "Article edited",
   "new": "Article created",
-  "create": "Article created",
   "categorize": "Category modified",
   "visualeditor": "visual edit",
   "mw-blank": "blanked page",
@@ -50,7 +49,8 @@ var logtitles = {
   "mw-removed-redirect": "redirect removed",
 }
 var eventTitles = {
-  "delete": "Page deleted/undeleted",
+  "delete": "Page deleted/restored",
+  "create": "Article created",
   "block": "User blocked",
   "protect": "Page protection level changed",
   "curseprofile": "User profile changed",
@@ -268,7 +268,7 @@ var logEvent = async function (channel, info) {
   });
   let log = logs.query.logevents[0];
   if (log) {
-    let title = "Log: " +eventTitles[log.type]||log.type;
+    let title = "Log: " + (eventTitles[log.type]||log.type);
     let comment = log.comment.replace(/\[\[([^\|]+?)(\|(.+?))*\]\]/g, function(t,a,b,c) {
       return "["+page+encodeURIComponent(a)+" "+(c||a)+"]"
     }).replace(/\/\s*\*\s*(.+?)\s*\*\s*\//g, function(a, v) {
