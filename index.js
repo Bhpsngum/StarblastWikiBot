@@ -40,6 +40,7 @@ var logtitles = {
   "log": "Special log",
   "edit": "Article edited",
   "new": "Article created",
+  "create": "Article created",
   "categorize": "Category modified",
   "visualeditor": "visual edit",
   "mw-blank": "blanked page",
