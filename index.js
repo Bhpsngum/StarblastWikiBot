@@ -175,8 +175,7 @@ var checkUpdateModdingPage = function(user, message) {
             ModdingInterfaceText = desc;
             break;
           case 'resource_img/aow_sun.png':
-            text += "aow_sun.png|thumb";
-            ModdingInterfaceText = desc;
+            text += "aow_sun.png|frameless";
             break;
           case 'https://i.stack.imgur.com/YOBFy.png':
             text += "Hues_ruler.png|frameless|500px";
