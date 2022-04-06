@@ -170,8 +170,12 @@ var checkUpdateModdingPage = function(user, message) {
       res = res.replace(/\[File\:\s*([^\|]+?)\|(.+\|)*(.+?)\]/g, function (Aqua, url, Kazuma, desc) {
         let text = "[File:";
         switch(url) {
-          case 'https://raw.githubusercontent.com/Bhpsngum/img-src/master/ModdingInterface.png':
+          case 'resource_img/ModdingInterface.png':
             text += "ModdingInterface.png|400px|thumb";
+            ModdingInterfaceText = desc;
+            break;
+          case 'resource_img/aow_sun.png':
+            text += "aow_sun.png|thumb";
             ModdingInterfaceText = desc;
             break;
           case 'https://i.stack.imgur.com/YOBFy.png':
