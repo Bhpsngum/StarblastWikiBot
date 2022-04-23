@@ -398,7 +398,7 @@ var checkAOWLinks = async function () {
     let { data, headers } = await axios.get(`https://starblast.io/battle-${region.name}.json`), lastMod = Date.parse(headers['last-modified']);
     let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
     if (region.link != link && Math.abs(Date.now() - lastMod) < delayRange) try {
-      let info = await SBPinger.getSystemInfo("https://starblast.io/#4501@1392.180.153.60:3017");
+      let info = await SBPinger.getSystemInfo(link);
       if (!info.error) gameLink.send(`\`@everyone/@here\` ${info.name || ""} - ${region.name} event: ${link}`)
     }
     catch (e) {}
