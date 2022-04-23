@@ -126,6 +126,27 @@ client.on('ready', async function() {
     console.log("Fetched last timestamp: "+lastDate);
     var startFetchRC = async function () {
       await fetchRC(logChannel, null, null, null, async function(){await setTimeout(startFetchRC, 5000)});
+      // AOW checklist
+
+      let regions = [
+        {
+          name: "Asia"
+        },
+        {
+          name: "America"
+        },
+        {
+          name: "Europe"
+        },
+      ];
+
+      for (let region of regions) try {
+        let data = (await axios.get(`https://starblast.io/battle-${region.name}.json`)).data;
+        let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
+        if (link != region.link) logChannel.send(`**${region.name} AOW link: **: ${link}`);
+        region.link = link;
+      }
+      catch (e) {console.log(e)}
     }
     setTimeout(startFetchRC, 5000);
   });
