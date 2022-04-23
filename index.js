@@ -13,6 +13,7 @@ const { window } = new JSDOM(``, {
   includeNodeLocations: true,
   storageQuota: 10000000
 });
+const SBPinger = require("starblast-pinger");
 const $ = require( "jquery" )( window );
 var axios = require("axios");
 var fetch_delay = 86400; // in seconds
@@ -86,7 +87,8 @@ var bot = new MediaWikiJS({
   url: 'https://starblast.fandom.com/api.php'
 });
 var client = new Discord.Client({
-  partials: []
+  partials: [],
+  intents: new Discord.Intents(32767)
 });
 let gameLinkID = "967294573883818025", gameLink;
 let regions = [
@@ -139,15 +141,7 @@ client.on('ready', async function() {
     console.log("Fetched last timestamp: "+lastDate);
     var startFetchRC = async function () {
       await fetchRC(logChannel, null, null, null, async function(){await setTimeout(startFetchRC, 5000)});
-      // AOW checklist
-
-      for (let region of regions) try {
-        let data = (await axios.get(`https://starblast.io/battle-${region.name}.json`)).data;
-        let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
-        if (link != region.link) gameLink.send(`**${region.name} AOW link: **: ${link}`);
-        region.link = link;
-      }
-      catch (e) {console.log(e)}
+      await checkAOWLinks();
     }
     setTimeout(startFetchRC, 5000);
   });
@@ -363,7 +357,7 @@ var handleAction = function(promise, message) {
   promise.then(e => message.reply("Action successfully performed.")).catch(e => {message.reply("Action failed to perfom.");console.log(e)})
 }
 
-client.on("message", function(message) {
+client.on("messageCreate", function(message) {
   if (message.content.startsWith("w!")) {
     message.content = message.content.replace("w!","");
     let commands = message.content.trim().split(" ");
@@ -396,3 +390,19 @@ client.on("message", function(message) {
     else !ignore && message.reply("You are not a wiki admin.")
   }
 });
+
+var delayRange = 2 * 60 * 60 * 1000; // ms
+
+var checkAOWLinks = async function () {
+  for (let region of regions) try {
+    let { data, headers } = await axios.get(`https://starblast.io/battle-${region.name}.json`), lastMod = Date.parse(headers['last-modified']);
+    let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
+    if (region.link != link && Math.abs(Date.now() - lastMod) < delayRange) try {
+      let info = await SBPinger.getSystemInfo("https://starblast.io/#4501@1392.180.153.60:3017");
+      if (!info.error) gameLink.send(`\`@everyone/@here\` ${info.name || ""} - ${region.name} event: ${link}`)
+    }
+    catch (e) {}
+    region.link = link;
+  }
+  catch (e) {console.log(e)}
+}
