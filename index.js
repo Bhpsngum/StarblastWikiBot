@@ -88,6 +88,18 @@ var bot = new MediaWikiJS({
 var client = new Discord.Client({
   partials: []
 });
+let gameLinkID = "967294573883818025", gameLink;
+let regions = [
+  {
+    name: "Asia"
+  },
+  {
+    name: "America"
+  },
+  {
+    name: "Europe"
+  },
+];
 
 // log the bot into Discord
 client.login(process.env.token);
@@ -100,6 +112,7 @@ client.on('ready', async function() {
   }).catch(e=>console.log("Login to Wiki failed."));
   client.user.setActivity("Checking Wiki");
   logChannel = client.channels.cache.get(logChannelID);
+  gameLink = client.channels.cache.get(gameLinkID);
   var messages = await logChannel.messages.fetch({ limit: 2 });
   messages = [...messages.values()];
   const lastMessage = messages[0].embeds;
@@ -128,22 +141,10 @@ client.on('ready', async function() {
       await fetchRC(logChannel, null, null, null, async function(){await setTimeout(startFetchRC, 5000)});
       // AOW checklist
 
-      let regions = [
-        {
-          name: "Asia"
-        },
-        {
-          name: "America"
-        },
-        {
-          name: "Europe"
-        },
-      ];
-
       for (let region of regions) try {
         let data = (await axios.get(`https://starblast.io/battle-${region.name}.json`)).data;
         let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
-        if (link != region.link) logChannel.send(`**${region.name} AOW link: **: ${link}`);
+        if (link != region.link) gameLink.send(`**${region.name} AOW link: **: ${link}`);
         region.link = link;
       }
       catch (e) {console.log(e)}
