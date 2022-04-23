@@ -391,7 +391,7 @@ client.on("messageCreate", function(message) {
   }
 });
 
-var delayRange = 2 * 60 * 60 * 1000; // ms
+var delayRange = 1 * 60 * 60 * 1000; // ms
 
 var checkAOWLinks = async function () {
   for (let region of regions) try {
