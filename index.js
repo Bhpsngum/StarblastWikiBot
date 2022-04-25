@@ -262,7 +262,7 @@ var logInfo = async function (channel, info) {
   var embed = new Discord.MessageEmbed()
   .setTitle(title)
   .setTimestamp(info.timestamp)
-  .setFooter('ID #'+info.rcid)
+  .setFooter({text: 'ID #'+info.rcid})
   .setColor('#0099ff')
   .addFields(
     {name: 'Page name and diffs', value: "["+info.title+"]("+page+encodeURIComponent(info.title)+"?curid="+info.pageid+"&diff="+info.revid+"&oldid="+info.old_revid+")"},
@@ -273,7 +273,7 @@ var logInfo = async function (channel, info) {
     {name: "Bytes changed", value: info.oldlen + " --> " + info.newlen + " (" + (difference>=0?"+":"") + difference + ")", inline: true},
     {name: 'Comment', value: comment||"`None`"}
   );
-  await channel.send(embed);
+  await channel.send({embeds: [embed]});
 }
 var logEvent = async function (channel, info) {
   let logs = await bot.api.get({
@@ -399,7 +399,7 @@ var checkAOWLinks = async function () {
     let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
     if (region.link != link && Math.abs(Date.now() - lastMod) < delayRange) try {
       let info = await SBPinger.getSystemInfo(link);
-      if (!info.error) gameLink.send(`\`@everyone/@here\` ${info.name || ""} - ${region.name} event: ${link}`)
+      if (!info.error) gameLink.send(`\`@everyone/@here\`\n**${info.name || ""} - ${region.name} event:**\n${link}`)
     }
     catch (e) {}
     region.link = link;
