@@ -297,7 +297,7 @@ var logEvent = async function (channel, info) {
     .setTitle(title)
     .setTimestamp(log.timestamp)
     .setURL(page+"Special:Log/"+log.type)
-    .setFooter('ID #'+info.rcid+" (log ID #"+log.logid+")")
+    .setFooter({text: 'ID #'+info.rcid+" (log ID #"+log.logid+")"})
     .setColor('#0099ff')
     .addFields(
       {name: eventPageTitles[log.type]||'Target page', value: "["+log.title+"]("+page+encodeURIComponent(log.title)+")", inline: true},
