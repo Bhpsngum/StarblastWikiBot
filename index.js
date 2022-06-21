@@ -306,13 +306,13 @@ var logEvent = async function (channel, info) {
       {name: "Tags", value: log.tags.map(i => eventTitles[i]||i).join(", ") || "None", inline: true},
       {name: 'Comment', value: comment||"`None`"}
     );
-    await channel.send(embed);
+    await channel.send({embeds: [embed]});
   }
 }
 var fetchRC = async function (channel, isManual, fetchDuration, criteria, callback) {
   let t = parseInt(fetchDuration), start;
   if (isNaN(t)) {
-    if (isManual) return channel.send("Invalid duration. Please specify valid number of hours.");
+    if (isManual) return channel.send({content: "Invalid duration. Please specify valid number of hours."});
     else start = lastDate;
   }
   else start = new Date(Date.now()-t*3600*1e3).toISOString();
@@ -334,7 +334,7 @@ var fetchRC = async function (channel, isManual, fetchDuration, criteria, callba
       if (info.type == "log") await logEvent(channel, info);
       else await logInfo(channel, info);
     }
-    if (rc.length == 0 && isManual) channel.send("No logs found during the specified duration.");
+    if (rc.length == 0 && isManual) channel.send({content: "No logs found during the specified duration."});
   });
   typeof callback == "function" && callback();
 }
@@ -364,7 +364,7 @@ client.on("messageCreate", function(message) {
     let command = (commands.shift()||"").toLowerCase();
     switch (command) {
       case "ping":
-        message.channel.send("Pong! Current ping is **"+client.ws.ping+"ms**!");
+        message.channel.send({content: "Pong! Current ping is **"+client.ws.ping+"ms**!"});
         break;
       case "recentchanges":
       case "rc":
@@ -399,7 +399,7 @@ var checkAOWLinks = async function () {
     let link = `https://starblast.io/#${data.system_id}@${data.initiator}:${data.port}`;
     if (region.link != link && Math.abs(Date.now() - lastMod) < delayRange) try {
       let info = await SBPinger.getSystemInfo(link);
-      if (!info.error) gameLink.send(`\`@everyone/@here\`\n**${info.name || ""} - ${region.name} event:**\n${link}`)
+      if (!info.error) gameLink.send({content: `\`@everyone/@here\`\n**${info.name || ""} - ${region.name} event:**\n${link}`})
     }
     catch (e) {}
     region.link = link;
